@@ -22,6 +22,56 @@
                 
                 combobox.appendTo( document.body );
                 
+                var arr = [1,2,3,4,3,4,5,6,6,7,5,6,3,4,5,4,5,6,7,8,9,0,4,3,5,7,64,3,12,123,43,54,5,4];
+                
+                var arr = [1,2,3,4,3,4,5,6,4,6,6,3,5,7,2,4];
+                
+                var arr = [1,2,3,4,5,6, 1];
+                
+                console.profile();
+                var t = getSumCombination( arr );
+                console.profileEnd();
+                
+                console.log( t );
+                
+                function getSumCombination( arr ) {
+                    var result = [];
+                    
+                    for( var i = 1; i < arr.length + 1; i++ ) {
+                        result = result.concat( getSubCombFixLen( i, arr ) );
+                    }
+                    
+                    return result;
+                }
+                
+                function getSubCombFixLen( len, arr ) {
+                    var result = [];
+                    
+                    var curStack = [];
+                    startFor( 0, len, curStack, 0, result );
+                    
+                    return result;
+                }
+                
+                function startFor( start, len, curStack, curSum, result ) {
+                    var i,localStack,localSum, arrLN = arr.length;
+                    for( i = start; i < arrLN; i++ ) {
+                        
+                        localStack = curStack.slice();
+                        localSum = curSum + arr[i];
+                        localStack.push( arr[i] );
+                        
+                        if( len === 1 ) {
+                            if( localSum === 10 ) {
+                                result.push( localStack );
+                            }
+                        } else {
+                            if( curSum < 10 ) {
+                                startFor( i + 1, len - 1, localStack, localSum, result );
+                            }
+                        }
+                    }
+                }
             };
         </script>
     </body>
