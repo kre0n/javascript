@@ -4,9 +4,11 @@
         var library = {
             // типы для встроенных объектов js
             TYPES : {
-                HTML_BODY_STRING : 'HTMLBodyElement',
+                HTML_ELEMENT_TYPE : 1,
                 ARRAY_STRING : 'Array',
                 OBJECT_STRING : 'Object',
+                STRING : 'string',
+                NUMBER : 'number',
             },
             
             // константы - для ошибок
@@ -30,6 +32,21 @@
                 var len = arr.length;
                 for( var i = 0; i < len; i++ ) {
                     fn( arr[i], i );
+                }
+            },
+            
+            /**
+             * 
+             * 
+             * @param {type} obj
+             * @param {type} fn
+             * @returns {undefined}
+             */
+            forEachObj : function( obj, fn ) {
+                if( !library.isObject( obj ) ) library.throwError( 'wrongTypeOfVariable', [ 'obj', 'Объект' ] );
+                
+                for( var key in obj ) {
+                    fn( obj[key], key );
                 }
             },
 
@@ -61,9 +78,19 @@
              * @returns {boolean}
              */
             isHTMLElement : function( item ) {
-                var string = {}.toString.call( item );
-                if( ~string.indexOf( library.TYPES.HTML_BODY_STRING ) ) {
-                    return true;
+                if( item.nodeType && item.nodeType === library.TYPES.HTML_ELEMENT_TYPE ) {
+                    try {
+                        var tag = item.tagName;
+                        item.tagName = '';  
+                        if( item.tagName === tag ) {
+                            return true;
+                        } else {
+                            item.tagName = tag;
+                            return false;
+                        }
+                    } catch (e) {
+                        return true;
+                    }
                 } else {
                     return false;
                 }
@@ -102,15 +129,115 @@
             },
             
             /**
+             * Проверяет является ли строкой аргумент
+             * 
+             * @param {type} str
+             * @returns {Boolean}
+             */
+            isString : function( str ) {
+                return typeof( str ) === library.TYPES.STRING;
+            },
+            
+            /**
              * Создает и возвращает HTML элемент
              *
-             * @param {type} tagName
              * @param {type} descriptor
+             *      @par {string} tagName = 'div' имя тэга
              * @returns {HTMLElement}
              */
-            newTag : function( tagName, descriptor ) {
+            newTag : function( descriptor ) {
+                descriptor = descriptor || {};
+                
+                var tagName = descriptor.tagName || 'div';
+                
+                return document.createElement( tagName );
+            },
+            
+            /**
+             * Статический метод, добавляет класс css к указанном узлу-элементу
+             * 
+             * @param {HTMLElement} htmlElement
+             * @param {string} className
+             * @returns {unresolved}
+             */
+            addClass : function( htmlElement, className ) {
+                if( !library.isHTMLElement( htmlElement ) ) library.throwError( 'wrongTypeOfVariable', [ 'htmlElement', 'Узел-элемент' ] );
+                if( !library.isString( className ) ) library.throwError( 'wrongTypeOfVariable', [ 'className', 'Строка' ] );
+                
+                var classArr = className.split( ' ' );
+                var currentClass = htmlElement.className;
+                
+                library.forEach( classArr, function( str ) {
+                    if( !~currentClass.indexOf( str ) ) {
+                        currentClass += " " + str;
+                    }
+                } );
+                
+                htmlElement.className = currentClass;
+                
+                return htmlElement;
+            },
+            
+            /**
+             * 
+             * @param {type} htmlElement
+             * @param {type} className
+             * @returns {undefined}
+             */
+            removeClass : function( htmlElement, className ) {
+                if( !library.isHTMLElement( htmlElement ) ) library.throwError( 'wrongTypeOfVariable', [ 'htmlElement', 'Узел-элемент' ] );
+                if( !library.isString( className ) ) library.throwError( 'wrongTypeOfVariable', [ 'className', 'Строка' ] );
+                
+                var currentClass = htmlElement.className;
+                var classArr = className.split( ' ' );
+                var currClassArr = currentClass.split( ' ' );
+                
+                var resultClass = '';
+                
+                library.forEach( currClassArr, function( item ) {
+                    if( ~classArr.indexOf( item ) ) return;
+                    resultClass += item;
+                } );
+                
+                htmlElement.className = resultClass;
+                
+                return htmlElement;                
+            },
+            
+            addEvent : function( htmlElement, event, handler, capture ) {
+                if( !library.isHTMLElement( htmlElement ) ) library.throwError( 'wrongTypeOfVariable', [ 'htmlElement', 'Узел-элемент' ] );
+                if( !library.isString( event ) ) library.throwError( 'wrongTypeOfVariable', [ 'event', 'Строка' ] );
+                
+                htmlElement.addEventListener( event, handler, capture );
                 
             },
+            
+            raiseEvent : function( htmlElement, eventName, param, caption ) {
+                if( !library.isHTMLElement( htmlElement ) ) library.throwError( 'wrongTypeOfVariable', [ 'htmlElement', 'Узел-элемент' ] );
+                param = param || {};
+                
+                var cancelable = false;
+                
+                var event = document.createEvent( "Event" );
+                event.initEvent( eventName, caption || false, cancelable === false ? false : true);
+                library.extend( event, param );
+                
+                htmlElement.dispatchEvent( event );
+            },
+            
+            /**
+             * 
+             * @param {type} obj1
+             * @param {type} obj2
+             * @returns {undefined}
+             */
+            extend : function( obj1, obj2 ) {
+                library.forEachObj( obj2, function( item, key ) {
+                    if( !obj1[ key ] ) {
+                        obj1[ key ] = item;
+                    }
+                } );
+            }
         };
             
         /**
@@ -120,15 +247,30 @@
          */
         library.LibElement = ( function() {
             var c = function( descriptor ) {
+                var self = this;
                 
-                library.newTag();
+                self.rootBox = library.newTag();
                 
             };
             
             c.prototype = Object.create( Object.prototype );
         
-            c.prototype.addEvent = function( name, handler ) {
-
+            c.prototype.addEvent = function( name, handler, capture ) {
+                library.addEvent( this.rootBox, name, handler, capture );
+                
+                return true;
+            };
+            
+            c.prototype.events = function( object, capture ) {
+                var self = this;
+                
+                object = object || {};
+                
+                library.forEachObj( object, function( item, key ) {
+                    library.addEvent( self.rootBox, key, item, capture );
+                } );
+                
+                return self;
             };
 
             c.prototype.removeEvent = function( name, handler ) {
@@ -148,8 +290,10 @@
 
             };
 
-            c.prototype.raiseEvent = function( name ) {
-
+            c.prototype.raiseEvent = function( event, param, caption ) {
+                param = param || {};
+                
+                library.raiseEvent( this.rootBox, event, param, caption );
             };
             
             /**
@@ -159,10 +303,23 @@
              * @returns {undefined}
              */
             c.prototype.appendTo = function( parent ) {
-                
                 if( !library.isHTMLElement( parent ) ) library.throwError( 'wrongTypeOfVariable', [ 'parent', 'Узел-элемент' ] );
                 
+                parent.appendChild( this.rootBox );
+            };
+            
+            c.prototype.addClass = function( str ) {
+                var self = this;
+                library.addClass( self.rootBox, str );
                 
+                return self;
+            };
+            
+            c.prototype.removeClass = function( str ) {
+                var self = this;
+                library.removeClass( self.rootBox, str );
+                
+                return self;
             };
             
             return c;

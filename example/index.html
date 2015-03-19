@@ -17,11 +17,49 @@
             window.onload = function() {
                 var combobox = new library.Combobox( {
                     extraClass : 'my-combobox',
-                    
                 } );
                 
                 combobox.appendTo( document.body );
                 
+                console.log( combobox.rootBox );
+                
+                combobox.addClass( 'test-class' );
+                combobox.addClass( 'test-class1' );
+                combobox.removeClass( 'test-class1' );
+                
+                /*
+                combobox.props( {
+                    style : {
+                        left: '110px',
+                        paddingLeft : '10px',
+                        width: "200px"
+                    },
+                    items : { 01 : "Число",
+                        02: "Строка",
+                        03: "Дата",
+                        04: "Дата и время",
+                        06: "Логический" 
+                    },   
+                    useAddButton : true
+                    
+                });
+                */
+               
+                combobox.events( {
+                    onchange : function( event ) {
+                        console.log ( event.oldSelectedItems, event.newSelectedItems );
+                    },
+                    
+                    onaddaction : function( event ) {
+                        console.log ( 'Сработало событие onaddaction', event.message );
+                    }
+                } );
+                
+                combobox.appendTo( document.body );
+                
+                combobox.raiseEvent( 'onaddaction', { message : 'куку' } );
+                
+                /*
                 var arr = [1,2,3,4,3,4,5,6,6,7,5,6,3,4,5,4,5,6,7,8,9,0,4,3,5,7,64,3,12,123,43,54,5,4];
                 
                 var arr = [1,2,3,4,3,4,5,6,4,6,6,3,5,7,2,4];
@@ -32,7 +70,7 @@
                 var t = getSumCombination( arr );
                 console.profileEnd();
                 
-                console.log( t );
+                console.log( t );*/
                 
                 function getSumCombination( arr ) {
                     var result = [];
